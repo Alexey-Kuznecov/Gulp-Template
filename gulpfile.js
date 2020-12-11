@@ -15,7 +15,8 @@ let path = {
         css: source_folder + "/scss/style.scss",
         js: source_folder + "/js/script.js",
         img: source_folder + "/img/**/*.{jpg,png,svg,gif,ico,webp}",
-        fonts: source_folder + "/fonts/*.ttf"
+        fonts: source_folder + "/fonts/*.ttf",
+        libs: source_folder + "/libs/**/dist/*"
     },
     watch: {
         html: source_folder + "/**/*.html",
@@ -28,25 +29,26 @@ let path = {
 }
 
 let { src, dest } = require('gulp'),
-gulp = require('gulp'),
-browsersync = require('browser-sync').create(),
-fileinclude = require('gulp-file-include'),
-del = require('del'),
-scss = require('gulp-sass'),
-autoprefixer = require('gulp-autoprefixer'),
-group_media = require('gulp-group-css-media-queries'),
+gulp = require('gulp'), // Подключаем Gulp
+browsersync = require('browser-sync').create(),  // Подключаем Browser Sync
+fileinclude = require('gulp-file-include'), // Подключаем библиотеку для объединения всех частичных html файлов в один index.html файл
+del = require('del'), // Подключаем библиотеку для удаления файлов и папок
+scss = require('gulp-sass'), //Подключаем Sass пакет,
+autoprefixer = require('gulp-autoprefixer'), // Подключаем библиотеку для автоматического добавления префиксов
+group_media = require('gulp-group-css-media-queries'), // Подключаем библиотеку для объединения всх медиа запросов в один
 clean_css = require('gulp-clean-css'),
-rename = require('gulp-rename'),
-uglify = require('gulp-uglify-es').default,
-imagemin = require('gulp-imagemin'),
-webp = require('gulp-webp'),
+rename = require('gulp-rename'), // Подключаем библиотеку для переименования файлов
+uglify = require('gulp-uglify-es').default, // Подключаем gulp-uglifyjs (для сжатия JS)
+imagemin = require('gulp-imagemin'), // Подключаем библиотеку для работы с изображениями
+webp = require('gulp-webp'), // Подключаем библиотеку для оптимизации картинок без потери качества
 webphtml = require('gulp-webp-html'),
 webpcss = require("gulp-webpcss"),
-svgSprite = require('gulp-svg-sprite'),
-ttf2woff = require('gulp-ttf2woff'),
-ttf2woff2 = require('gulp-ttf2woff2'),
-fonter = require('gulp-fonter');
-
+svgSprite = require('gulp-svg-sprite'), // Подключаем библиотеку для создания единого файла для всех svg иконок
+ttf2woff = require('gulp-ttf2woff'), // Подключаем библиотеку для конвертации шрифтов из ttf2 в woff
+ttf2woff2 = require('gulp-ttf2woff2'), // Подключаем библиотеку для конвертации шрифтов из ttf2 в woff2
+fonter = require('gulp-fonter'), // Подключаем библиотеку для конвертации шрифтов из otf в ttf
+cache = require('gulp-cache'), // Подключаем библиотеку кеширования
+concat = require('gulp-concat'); // Подключаем gulp-concat (для конкатенации файлов)
 
 function browserSync() {
     browsersync.init({
@@ -73,7 +75,7 @@ function css() {
         }))
         .pipe(group_media())
         .pipe(autoprefixer({
-            overrideBrowserslist: ["last 5 version"],
+            overrideBrowserslist: ['last 15 versions','> 1%','ie 7','ie 8'],
             cascade: false
         }))
         .pipe(webpcss())
@@ -105,16 +107,17 @@ function images() {
         }))
         .pipe(dest(path.build.img))
         .pipe(src(path.src.img))
-        .pipe(imagemin({
+        .pipe(cache(imagemin({
             progressive: true,
             svgoPlugins: [{ removeViewBox: false }],
             interlaced: true,
             optimizationLevel: 3 // 0 to 7
-        }))
+        })))
         .pipe(dest(path.build.img))
         .pipe(browsersync.stream())
 }
 
+// Includes all fonts in the font file.
 function fontsStyle(params) {
 
     let file_content = fs.readFileSync(source_folder + '/scss/fonts.scss');
@@ -145,10 +148,24 @@ function watchFiles() {
     gulp.watch([path.watch.img], images);
 }
 
+
 function clean() {
     return del(path.clean);
 }
 
+gulp.task('merge_libs_scripts', function() {
+    return gulp.src(path.src.libs + '*.min.js')
+      .pipe(concat('libs.min.js'))
+      .pipe(uglify())
+      .pipe(gulp.dest(path.build.js));
+});
+
+
+gulp.task('clear', function() {
+    return cache.clearAll();
+});
+ 
+// Create a WOFF font from a TTF one with Gulp.
 function fonts() {
     src(path.src.fonts)
         .pipe(ttf2woff())
@@ -158,6 +175,7 @@ function fonts() {
         .pipe(dest(path.build.fonts))
 }
 
+// This plugin is basically gulp wrapper for fonteditor-core with ability to save in multiple formats at once.
 gulp.task('otf2ttf', function name() {
     return src([source_folder + '/fonts/*.otf'])
         .pipe(fonter({
@@ -166,8 +184,9 @@ gulp.task('otf2ttf', function name() {
         .pipe(dest(source_folder + '/fonts/'))
 })
 
+// Gulp plugin wrapping around svg-sprite which takes a bunch of SVG files, optimizes them.
 gulp.task('svgSprite', function name() {
-    return gulp.src([source_folder + '/iconsprite/*.svg'])
+    return gulp.src([source_folder + '/img/svg/*.svg'])
         .pipe(svgSprite({
             mode: {
                 stack: {
