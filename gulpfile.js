@@ -154,13 +154,19 @@ function clean() {
 }
 
 function mergeScriptLib () {
-    return gulp.src([path.src.libs + '*.min.js', path.src.libs + 'js/*.min.js'])
+    return gulp.src([
+        'app/libs/jquery/dist/jquery.min.js',
+        // 'app/libs/magnific-popup/dist/jquery.magnific-popup.min.js',
+        'app/libs/bootstrap/dist/js/bootstrap.min.js'
+        ])
     .pipe(concat('libs.min.js'))
     .pipe(gulp.dest(path.build.js));
 }
 
 function mergeStylesLib () {
-    return gulp.src([path.src.libs + '*.min.css', path.src.libs + 'css/*.min.css'])
+    return gulp.src([
+        'app/libs/bootstrap/dist/css/bootstrap.min.css'
+        ])
     .pipe(concat('libs.min.css'))
     .pipe(gulp.dest(path.build.css));
 }
@@ -202,7 +208,7 @@ gulp.task('svgSprite', function name() {
         .pipe(dest(path.build.img))
 })
 
-let build = gulp.series(clean, mergeStylesLib, mergeScriptLib, gulp.parallel(js, css, html, images), fonts, fontsStyle);
+let build = gulp.series(clean, gulp.parallel(js, css, html, images, mergeStylesLib, mergeScriptLib), fonts, fontsStyle);
 let watch = gulp.parallel(build, watchFiles, browserSync);
 
 exports.mergeStylesLib = mergeStylesLib;
