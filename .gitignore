@@ -1,3 +1,4 @@
 node_modules
-WebDesign
-app\libs
+dist
+app/libs
+
