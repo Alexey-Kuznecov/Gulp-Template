@@ -1,4 +1,5 @@
-let project_folder = require("path").basename(__dirname);
+// let project_folder = require("path").basename(__dirname);
+let project_folder = "dist";
 let source_folder = "app";
 let fs = require('fs');
 
@@ -148,18 +149,21 @@ function watchFiles() {
     gulp.watch([path.watch.img], images);
 }
 
-
 function clean() {
     return del(path.clean);
 }
 
-gulp.task('merge_libs_scripts', function() {
-    return gulp.src(path.src.libs + '*.min.js')
-      .pipe(concat('libs.min.js'))
-      .pipe(uglify())
-      .pipe(gulp.dest(path.build.js));
-});
+function mergeScriptLib () {
+    return gulp.src([path.src.libs + '*.min.js', path.src.libs + 'js/*.min.js'])
+    .pipe(concat('libs.min.js'))
+    .pipe(gulp.dest(path.build.js));
+}
 
+function mergeStylesLib () {
+    return gulp.src([path.src.libs + '*.min.css', path.src.libs + 'css/*.min.css'])
+    .pipe(concat('libs.min.css'))
+    .pipe(gulp.dest(path.build.css));
+}
 
 gulp.task('clear', function() {
     return cache.clearAll();
@@ -198,9 +202,11 @@ gulp.task('svgSprite', function name() {
         .pipe(dest(path.build.img))
 })
 
-let build = gulp.series(clean, gulp.parallel(js, css, html, images), fonts, fontsStyle);
+let build = gulp.series(clean, mergeStylesLib, mergeScriptLib, gulp.parallel(js, css, html, images), fonts, fontsStyle);
 let watch = gulp.parallel(build, watchFiles, browserSync);
 
+exports.mergeStylesLib = mergeStylesLib;
+exports.mergeScriptLib = mergeScriptLib;
 exports.fontsStyle = fontsStyle;
 exports.fonts = fonts;
 exports.images = images;
